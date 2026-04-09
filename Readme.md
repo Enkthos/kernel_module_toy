@@ -24,6 +24,10 @@ gcc --version && make --version
 ### 3. Build the Module
 
 ```bash
+#Since the makefile is not called makefile, create a symbolic link to prevent errors
+
+ln -s Makefile_embedded Makefile
+
 # Make test script executable
 chmod +x test_embedded.sh
 

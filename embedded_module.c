@@ -398,9 +398,11 @@ static long dev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg) {
                             sizeof(adc_data))) {
                 return -EFAULT;
             }
-            pr_info("Embedded I/O: ADC ch%u read: %u (%.2fV)\n",
-                   adc_data.channel, adc_data.value, 
-                   (float)adc_data.voltage_mv / 1000.0f);
+                   pr_info("Embedded I/O: ADC ch%u read: %u raw → %u.%02u V\n",
+                   adc_data.channel,
+                   adc_data.value,
+                   adc_data.voltage_mv / 1000,      // integer part
+                   adc_data.voltage_mv % 1000);     // two decimal places
         }
         break;
         
