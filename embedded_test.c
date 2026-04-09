@@ -28,6 +28,10 @@
 #define SENSOR_READ_ADC     _IOR(EMBEDDED_IOC_MAGIC, 6, struct adc_data)
 #define DEVICE_GET_STATUS   _IOR(EMBEDDED_IOC_MAGIC, 7, struct device_status)
 
+/* UART Simulation Commands */
+#define UART_SEND           _IOW(EMBEDDED_IOC_MAGIC, 8, struct uart_data)
+#define UART_RECEIVE        _IOR(EMBEDDED_IOC_MAGIC, 9, struct uart_data)
+
 /* Data structures - MUST match kernel module */
 struct gpio_data {
     unsigned int pin;
@@ -44,6 +48,14 @@ struct adc_data {
     unsigned int channel;
     unsigned int value;      /* 0-4095 (12-bit) */
     unsigned int voltage_mv; /* Voltage in millivolts */
+};
+
+/* UART data structure  */
+struct uart_data {
+    unsigned int port;
+    char buffer[256];
+    unsigned int length;
+    unsigned int baudrate;
 };
 
 struct device_status {
