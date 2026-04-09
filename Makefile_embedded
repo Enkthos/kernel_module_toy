@@ -1,0 +1,26 @@
+# Makefile for embedded I/O kernel module
+# Features: GPIO control, PWM generation, ADC reading
+
+MODULE_NAME := embedded_module
+PWD := $(shell pwd)
+KDIR := /lib/modules/$(shell uname -r)/build
+
+ccflags-y := -std=gnu99 -Wall -Wextra -g
+obj-m := $(MODULE_NAME).o
+
+all:
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
+	rm -f *.o *.ko *.mod.c *.symvers *.order
+
+help:
+	@echo "Embedded I/O Module - Build Targets"
+	@echo "  make         - Build the kernel module"
+	@echo "  make clean   - Remove build artifacts"
+	@echo "  make help    - Show this message"
+	@echo ""
+	@echo "Features: 32 GPIO pins, 4 PWM channels, 8 ADC channels"
+
+.PHONY: all clean help
