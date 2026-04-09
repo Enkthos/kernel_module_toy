@@ -1,7 +1,8 @@
 
+# Embedded I/O Simulator - Kernel Module Toy
 
-### Kernel Module Toy
-
+A virtual embedded development board that runs inside Linux.
+This project contains the following files:
 ```
 embedded_module.c           - Kernel module 
 embedded_test.c             - Control program 
@@ -9,9 +10,46 @@ Makefile_embedded           - Build configuration
 test_embedded.sh            - Automated build/test
 ```
 
+## What is this?
+
+This program creates a **fake electronic development board** directly inside your Linux system — no real hardware required.
+
+It creates a virtual device file `/dev/embedded_io` that your programs can talk to using standard Linux system calls.
+
+## Features
+
+The simulator currently supports:
+
+- **GPIO Pins** (32 pins)  
+  Turn pins on/off — like controlling LEDs or simple digital devices.
+
+- **PWM Channels** (4 channels)  
+  Control motor speed or LED brightness (frequency + duty cycle).
+
+- **ADC / Analog Sensors** (8 channels)  
+  Simulate reading real-world sensors (temperature, light, voltage, etc.) with realistic varying values.
+
+- **UART / Serial Communication**  
+  Send and receive text messages, simulating serial communication between devices.
+
+## How to Use
+
+Use the included test program `embedded_test`:
+
+```bash
+# Basic examples
+sudo ./embedded_test gpio-write 0 1          # Turn GPIO pin 0 ON
+sudo ./embedded_test adc 0                    # Read sensor on channel 0
+sudo ./embedded_test uart-send 0 "Hello!"     # Send message via UART
+sudo ./embedded_test uart-receive 0           # Read message from UART
+
+# Run full demonstration
+sudo ./embedded_test test
+```
 ---
 
-### Install Tools
+# Deployment
+## Install Tools
 
 ```bash
 # Ubuntu/Debian:
@@ -21,7 +59,7 @@ sudo apt update && sudo apt install -y build-essential linux-headers-$(uname -r)
 gcc --version && make --version
 ```
 
-### 3. Build the Module
+### Build the Module
 
 ```bash
 #Since the makefile is not called makefile, create a symbolic link to prevent errors
@@ -47,7 +85,7 @@ sudo ./test_embedded.sh build-all
 
 ```
 
-### 4. Test It Works
+### Test 
 
 ```bash
 # Load module into kernel
@@ -74,7 +112,7 @@ Setting GPIO 0 as output...
 
 ```
 
-### 5. Play!
+### Play!
 
 Your kernel module is now running!
 
@@ -87,7 +125,7 @@ dmesg | tail -5
 
 ---
 
-## Commands
+## Some important commands
 
 ```bash
 # Build (from ~/embedded-dev)
@@ -109,6 +147,12 @@ sudo ./embedded_test pwm 0 1000 50     # 1kHz @ 50% duty
 
 # Read ADC
 sudo ./embedded_test adc 0             # Read channel 0
+
+#UART test send
+sudo ./embedded_test uart-send 0 "Hello from userspace via UART!"
+
+#UART receive test
+sudo ./embedded_test uart-receive 0
 
 # Monitor
 dmesg | tail -20                       # Last 20 kernel messages
