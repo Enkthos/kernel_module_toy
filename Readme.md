@@ -37,14 +37,14 @@ sudo ./test_embedded.sh build-all
 
 **Expected output:**
 ```
-[*] Building embedded I/O module...
-  CC [M]  embedded_module.o
-  MODPOST embedded_module.o
-  LD [M]  embedded_module.ko
+
 [✓] Build successful
+-rw-r--r-- 1 root root 303K Apr  9 22:58 embedded_module.ko
 
 [*] Building test program...
 [✓] Test program compiled
+-rwxr-xr-x 1 root root 21K Apr  9 22:58 embedded_test
+
 ```
 
 ### 4. Test It Works
@@ -59,10 +59,19 @@ sudo ./test_embedded.sh test
 
 **Expected output:**
 ```
-✓ GPIO tests passed
-✓ PWM tests passed
-✓ ADC tests passed
+[✓] Device found: /dev/embedded_io
+crw------- 1 root root 238, 0 Apr  9 23:00 /dev/embedded_io
+
+[*] Testing GPIO functionality...
+Setting GPIO 0 as output...
+✓ GPIO pin 0 set as OUTPUT
+
+...
+
+════════════════════════════════════════
 ✓ All tests passed!
+════════════════════════════════════════
+
 ```
 
 ### 5. Play!

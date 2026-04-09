@@ -24,6 +24,11 @@
 #define SENSOR_READ_ADC     _IOR(EMBEDDED_IOC_MAGIC, 6, struct adc_data)
 #define DEVICE_GET_STATUS   _IOR(EMBEDDED_IOC_MAGIC, 7, struct device_status)
 
+/* UART Simulation Commands */
+#define UART_SEND           _IOW(EMBEDDED_IOC_MAGIC, 8, struct uart_data)
+#define UART_RECEIVE        _IOR(EMBEDDED_IOC_MAGIC, 9, struct uart_data)
+
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Salvador");
 MODULE_DESCRIPTION("Embedded I/O Control Module - GPIO, PWM, ADC simulation for development");
@@ -55,6 +60,14 @@ struct device_status {
     unsigned int operation_count;
 };
 
+/* UART simulation data structure */
+struct uart_data {
+    unsigned int port;        /* UART port (0 = UART0) */
+    char buffer[256];         /* Data to send/receive */
+    unsigned int length;      /* Number of bytes */
+    unsigned int baudrate;    /* Optional - for info only */
+};
+
 /* Device state structure */
 typedef struct {
     unsigned int gpio_pins[32];      /* GPIO pin states (0 or 1) */
@@ -64,6 +77,11 @@ typedef struct {
     unsigned long device_start_time;
     unsigned int operation_count;
     struct semaphore sem;
+
+     /* UART simulation */
+    char uart_rx_buffer[256];
+    unsigned int uart_rx_len;
+    unsigned int uart_port;
 } embedded_device_t;
 
 /* Device variables */
@@ -134,6 +152,11 @@ static int __init embedded_init(void) {
     for (i = 0; i < 8; i++) {
         device_data->adc_channels[i] = simulate_adc_read(i);
     }
+
+     /* Initialize UART simulation */
+    device_data->uart_rx_len = 0;
+    device_data->uart_port = 0;
+    memset(device_data->uart_rx_buffer, 0, sizeof(device_data->uart_rx_buffer));
     
     /* Register character device */
     majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
@@ -324,6 +347,7 @@ static long dev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg) {
     struct pwm_config pwm_config;
     struct adc_data adc_data;
     struct device_status status;
+    struct uart_data uart_data;
     int retval = 0;
     int i;
     
@@ -425,6 +449,44 @@ static long dev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg) {
         pr_info("Embedded I/O: Status reported\n");
         break;
         
+    /* UART SIM  */
+    case UART_SEND:
+        if (copy_from_user(&uart_data, (struct uart_data __user *)arg, sizeof(uart_data))) {
+            return -EFAULT;
+        }
+        if (uart_data.length > 0 && uart_data.length <= 256) {
+            memcpy(device_data->uart_rx_buffer, uart_data.buffer, uart_data.length);
+            device_data->uart_rx_len = uart_data.length;
+            device_data->uart_port = uart_data.port;
+
+            pr_info("Embedded I/O: UART%u received %u bytes\n", 
+                   uart_data.port, uart_data.length);
+        }
+        break;
+
+    case UART_RECEIVE:
+        if (copy_from_user(&uart_data, (struct uart_data __user *)arg, sizeof(uart_data))) {
+            return -EFAULT;
+        }
+        if (device_data->uart_rx_len > 0) {
+            uart_data.length = device_data->uart_rx_len;
+            uart_data.port = device_data->uart_port;
+            memcpy(uart_data.buffer, device_data->uart_rx_buffer, device_data->uart_rx_len);
+
+            if (copy_to_user((struct uart_data __user *)arg, &uart_data, sizeof(uart_data))) {
+                return -EFAULT;
+            }
+
+            pr_info("Embedded I/O: UART%u sent %u bytes to user\n", 
+                   uart_data.port, uart_data.length);
+
+            device_data->uart_rx_len = 0;   /* Clear after reading */
+        } else {
+            uart_data.length = 0;
+            copy_to_user((struct uart_data __user *)arg, &uart_data, sizeof(uart_data));
+        }
+        break;
+
     default:
         return -ENOTTY;
     }

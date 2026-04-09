@@ -130,7 +130,23 @@ int main(int argc, char *argv[]) {
         
     } else if (strcmp(argv[1], "status") == 0) {
         device_status(fd);
-        
+    /*UART*/
+    } else if (strcmp(argv[1], "uart-send") == 0) {
+        if (argc != 4) {
+            fprintf(stderr, "Usage: %s uart-send <port> \"message\"\n", argv[0]);
+            close(fd);
+            return 1;
+        }
+        uart_send(fd, atoi(argv[2]), argv[3]);
+
+    } else if (strcmp(argv[1], "uart-receive") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "Usage: %s uart-receive <port>\n", argv[0]);
+            close(fd);
+            return 1;
+        }
+        uart_receive(fd, atoi(argv[2]));    
+
     } else if (strcmp(argv[1], "read") == 0) {
         device_read_status(fd);
         
@@ -163,6 +179,12 @@ int main(int argc, char *argv[]) {
         adc_read(fd, 1);
         adc_read(fd, 2);
         
+        /*uart*/
+        printf(YELLOW "\n7. Testing UART simulation..." RESET "\n");
+        uart_send(fd, 0, "Hello from userspace via UART simulation!");
+        sleep(1);
+        uart_receive(fd, 0);
+
         printf(YELLOW "\n6. Getting device status..." RESET "\n");
         device_status(fd);
         
@@ -178,6 +200,42 @@ int main(int argc, char *argv[]) {
     close(fd);
     return 0;
 }
+
+
+/* UART TEST FUNCTIONS */
+int uart_send(int fd, unsigned int port, const char *message) {
+    struct uart_data data = {0};
+
+    data.port = port;
+    strncpy(data.buffer, message, sizeof(data.buffer) - 1);
+    data.length = strlen(message);
+
+    if (ioctl(fd, UART_SEND, &data) < 0) {
+        perror(RED "ioctl UART_SEND failed" RESET);
+        return -1;
+    }
+    printf(GREEN "✓ UART%u sent: %s\n" RESET, port, message);
+    return 0;
+}
+
+int uart_receive(int fd, unsigned int port) {
+    struct uart_data data = {0};
+    data.port = port;
+
+    if (ioctl(fd, UART_RECEIVE, &data) < 0) {
+        perror(RED "ioctl UART_RECEIVE failed" RESET);
+        return -1;
+    }
+
+    if (data.length > 0) {
+        printf(GREEN "✓ UART%u received %u bytes: %.*s\n" RESET,
+               port, data.length, (int)data.length, data.buffer);
+    } else {
+        printf(YELLOW "UART%u: No data available\n" RESET, port);
+    }
+    return 0;
+}
+
 
 void print_help(const char *prog) {
     printf(BLUE "Embedded I/O Module Control Program\n" RESET);
